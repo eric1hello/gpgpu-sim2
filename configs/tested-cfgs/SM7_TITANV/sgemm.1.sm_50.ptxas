@@ -1,7 +1,0 @@
-ptxas info    : 0 bytes gmem
-ptxas info    : Compiling entry function '_Z22sgemm_128x128x8_kernelPKfS0_Pfjjjjj' for 'sm_50'
-ptxas info    : Function properties for _Z22sgemm_128x128x8_kernelPKfS0_Pfjjjjj
-    544 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
-ptxas info    : Used 62 registers, 24576 bytes smem, 364 bytes cmem[0]
-ptxas info    : Function properties for _Z9C_tile_wb7StgFragPfPKfjjjjj
-    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
