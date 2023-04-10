@@ -1364,6 +1364,7 @@ void scheduler_unit::cycle() {
                   }
                 }
 
+                printf ("ERIC_DEBUG: warp schedule id = %d, warp_id =%d \n",m_id, warp_id);
                 if (execute_on_SP) {
                   m_shader->issue_warp(*m_sp_out, pI, active_mask, warp_id,
                                        m_id);
