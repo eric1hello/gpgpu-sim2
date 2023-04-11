@@ -1,8 +1,6 @@
-#!/usr/bin/python
-#
-# File: aerialvision.py
-# 
-# Copyright (C) 2009 by Aaron Ariel, Tor M. Aamodt, Andrew Turner 
+#!/usr/bin/env python
+
+# Copyright (C) 2009 by Wilson W. L. Fung
 # and the University of British Columbia, Vancouver, 
 # BC V6T 1Z4, All Rights Reserved.
 # 
@@ -61,25 +59,41 @@
 # 6. GPGPU-SIM was developed primarily by Tor M. Aamodt, Wilson W. L. Fung, 
 # Ali Bakhoda, George L. Yuan, at the University of British Columbia, 
 # Vancouver, BC V6T 1Z4
- 
-import sys
-import os
 
-if not os.environ['HOME']:
-	print ("please set your HOME environment variable to your home directory")
-	sys.exit
-if not os.environ['GPGPUSIM_ROOT']:
-	print ("please set your GPGPUSIM_ROOT environment variable to your home directory")
-	sys.exit
 
-sys.path.append( os.environ['GPGPUSIM_ROOT'] + '/aerialvision/' ) 
+import configparser, os
 
-import tkinter as Tk
-import Pmw
-import startup
-import time
+userSettingPath = os.path.join(os.environ['HOME'], '.gpgpu_sim', 'aerialvision')
 
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-from matplotlib.figure import Figure
+# Globally available configuration options for AerialVision
+class AerialVisionConfig:
 
-startup.fileInput(sys.argv[1:])
+    def __init__(self):
+        self.config = configparser.SafeConfigParser()
+        self.config.read( os.path.join(userSettingPath, 'config.rc') )
+
+    def print_all(self):
+        for section in self.config.sections():
+            for option in self.config.options(section):
+                value = self.config.get(section, option)
+                print ("\t%s.%s = %s" % (section, option, value));
+
+    def get_value(self, section, option, default):
+        if (self.config.has_option(section, option)):
+            return self.config.get(section, option)
+        else:
+            return default
+
+# This is the object containing all the options
+avconfig = AerialVisionConfig()
+
+
+#Unit test / configviewer
+def main():
+    print ("AerialVision Options:")
+    avconfig.print_all()
+    print ("");
+
+if __name__ == "__main__":
+    main()
+

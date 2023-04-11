@@ -1,9 +1,7 @@
-#!/usr/bin/python
-#
-# File: aerialvision.py
-# 
-# Copyright (C) 2009 by Aaron Ariel, Tor M. Aamodt, Andrew Turner 
-# and the University of British Columbia, Vancouver, 
+#!/usr/bin/env python
+
+# Copyright (C) 2009 by Aaron Ariel, Tor M. Aamodt and the University of British 
+# Columbia, Vancouver, 
 # BC V6T 1Z4, All Rights Reserved.
 # 
 # THIS IS A LEGAL DOCUMENT BY DOWNLOADING GPGPU-SIM, YOU ARE AGREEING TO THESE
@@ -61,25 +59,122 @@
 # 6. GPGPU-SIM was developed primarily by Tor M. Aamodt, Wilson W. L. Fung, 
 # Ali Bakhoda, George L. Yuan, at the University of British Columbia, 
 # Vancouver, BC V6T 1Z4
- 
-import sys
+
+
 import os
+import sys
+import ply.lex as lex
+import ply.yacc as yacc
+import variableclasses as vc
 
-if not os.environ['HOME']:
-	print ("please set your HOME environment variable to your home directory")
-	sys.exit
-if not os.environ['GPGPUSIM_ROOT']:
-	print ("please set your GPGPUSIM_ROOT environment variable to your home directory")
-	sys.exit
+def parseMe():
+  
 
-sys.path.append( os.environ['GPGPUSIM_ROOT'] + '/aerialvision/' ) 
+  
+    #The lexer
+        
+    # List of token names.   This is always required
+    tokens = ['WORD',
+        'EQUALS',
+        'VALUE',
+        'NUMBER',
+        'NOTHING'
+    ]
+    
+    # Regular expression rules for tokens
+    
+    def t_VALUE(t):
+        r'["][a-zA-Z()0-9\._ ]+["]'
+        return t
+    
+    def t_EQUALS(t):
+        r'[=][ ]'
+        return t
+    
+    def t_WORD(t):
+        r'[a-zA-Z_]+[ ]'
+        return t
 
-import tkinter as Tk
-import Pmw
-import startup
-import time
+    def t_NUMBER(t):
+        r'["][\d]+["]'
+        return t
+    
+    def t_NOTHING(t):
+        r'["]["]'
+        return t
+        
+    t_ignore = '[\n]+'
+    
 
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-from matplotlib.figure import Figure
+        
+    def t_error(t):
+        print ("Illegal character '%s'" % t.value[0])
+        t.lexer.skip(1) 
+    
+    lex.lex()    
+    
+    listBookmarks = []
 
-startup.fileInput(sys.argv[1:])
+        
+    def p_sentence(p):
+
+        '''sentence : WORD EQUALS VALUE 
+                    | WORD EQUALS NUMBER
+                    | WORD EQUALS NOTHING'''
+        p[1] = p[1][0:-1]
+        p[3] = p[3][1:-1]
+
+        if p[1] == 'title':
+            listBookmarks[-1].title = p[3]
+
+        elif p[1] == 'description':
+            listBookmarks[-1].description = p[3]
+
+        elif p[1] == 'dataChosenX':
+            listBookmarks[-1].dataChosenX.append(p[3])
+            
+        elif p[1] == 'dataChosenY':
+            listBookmarks[-1].dataChosenY.append(p[3])
+
+        elif p[1] == 'graphChosen':
+            listBookmarks[-1].graphChosen.append(p[3])
+
+            
+        elif p[1] == 'dydx':
+            listBookmarks[-1].dydx.append(p[3])
+        
+        elif p[1] == 'START':
+            listBookmarks.append(vc.bookmark())
+        
+        elif p[1] == 'ReasonForFile':
+            pass
+
+        else:
+            print ('An Parsing Error has occurred')
+            
+
+    
+
+
+
+    def p_error(p):
+        if p:
+            print("Syntax error at '%s'" % p.value)
+        else:
+            print("Syntax error at EOF")
+    
+    yacc.yacc()
+   
+    try:
+        file = open(os.environ['HOME'] + '/.gpgpu_sim/aerialvision/bookmarks.txt', 'r')
+        inputData = file.readlines()
+    except IOError as e:
+        if e.errno == 2:
+            inputData = ''
+        else:
+            raise e
+
+    for x in inputData:
+        yacc.parse(x[0:-1]) # ,debug=True)
+        
+    return listBookmarks

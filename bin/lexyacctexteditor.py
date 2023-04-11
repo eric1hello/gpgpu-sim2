@@ -1,8 +1,6 @@
-#!/usr/bin/python
-#
-# File: aerialvision.py
-# 
-# Copyright (C) 2009 by Aaron Ariel, Tor M. Aamodt, Andrew Turner 
+#!/usr/bin/env python
+
+# Copyright (C) 2009 by Aaron Ariel, Wilson W. L. Fung
 # and the University of British Columbia, Vancouver, 
 # BC V6T 1Z4, All Rights Reserved.
 # 
@@ -61,25 +59,110 @@
 # 6. GPGPU-SIM was developed primarily by Tor M. Aamodt, Wilson W. L. Fung, 
 # Ali Bakhoda, George L. Yuan, at the University of British Columbia, 
 # Vancouver, BC V6T 1Z4
- 
+
+
+
 import sys
-import os
+import re
+sys.path.insert(0,"Lib/site-packages/ply-3.2/ply-3.2")
+import ply.lex as lex
+import ply.yacc as yacc
+import variableclasses as vc
 
-if not os.environ['HOME']:
-	print ("please set your HOME environment variable to your home directory")
-	sys.exit
-if not os.environ['GPGPUSIM_ROOT']:
-	print ("please set your GPGPUSIM_ROOT environment variable to your home directory")
-	sys.exit
+def textEditorParseMe(filename):
+    
+    tokens = ['FILENAME', 'NUMBERSEQUENCE']
+    
+    def t_FILENAME(t):
+        r'[a-zA-Z_/.][a-zA-Z0-9_/.]*\.ptx'
+        return t
 
-sys.path.append( os.environ['GPGPUSIM_ROOT'] + '/aerialvision/' ) 
+    def t_NUMBERSEQUENCE(t):
+        r'[0-9 :]+'
+        return t
+        
+    t_ignore = '\t: '
+    
+    def t_newline(t):
+        r'\n+'
+        t.lexer.lineno += t.value.count("\n")
+        
+    def t_error(t):
+        print ("Illegal character '%s'" % t.value[0])
+        t.lexer.skip(1)
+        
+    lex.lex()
+    
+    count = []
+    latency = []
+    organized = {}
 
-import tkinter as Tk
-import Pmw
-import startup
-import time
+    def p_sentence(p):
+      '''sentence : FILENAME NUMBERSEQUENCE'''
+      tmp1 = []
+      tmp = p[2].split(':')
+      for x in tmp:
+        x = x.strip()
+        tmp1.append(x)
+      organized[int(tmp1[0])] = tmp1[1].split(' ')
+          
 
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-from matplotlib.figure import Figure
+    def p_error(p):
+      if p:
+          print("Syntax error at '%s'" % p.value)
+          print ( p)
+      else:
+          print("Syntax error at EOF")
 
-startup.fileInput(sys.argv[1:])
+        
+    yacc.yacc()
+    
+    file = open(filename, 'r')
+    while file:
+        line = file.readline()
+        if not line : break
+        if (line.startswith('kernel line :')) :
+            line = line.strip()
+            ptxLineStatName = line.split(' ')
+            ptxLineStatName = ptxLineStatName[3:]
+        else: 
+            yacc.parse(line[0:-1])
+        
+        
+    return organized
+  
+  
+def ptxToCudaMapping(filename):
+  map = {}
+  file = open(filename, 'r')
+  bool = 0
+  count = 0
+  loc = 0
+  while file:
+    line = file.readline()
+    if not line: break
+    try:
+      map[loc].append(count)
+    except:
+      map[loc] = []
+      map[loc].append(count)
+
+    m = re.search('\.loc\s+(\d+)\s+(\d+)\s+(\d+)', line)
+    if (m != None):
+      loc = int(m.group(2))
+
+    count += 1
+  x = map.keys()
+  return map
+    
+
+#Unit test / playground
+def main():
+    data = textEditorParseMe(sys.argv[1])
+    print ( data[100])
+   
+if __name__ == "__main__":
+    main()
+  
+  
+  
